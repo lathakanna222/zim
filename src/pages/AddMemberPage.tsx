@@ -7,9 +7,11 @@ import Button from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import toast from 'react-hot-toast';
 import { Member } from '../types';
+import { useMemberContext } from '../context/MemberContext';
 
 const AddMemberPage: React.FC = () => {
   const navigate = useNavigate();
+  const { addMember } = useMemberContext();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -47,8 +49,8 @@ const AddMemberPage: React.FC = () => {
       memberId: `MEM${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
     };
 
-    // Add member to the list (in a real app, this would be an API call)
-    // For now, we'll use local state management
+    // Add member using context
+    addMember(newMember);
     toast.success('Member added successfully');
     navigate('/members');
   };

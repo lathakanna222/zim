@@ -1,17 +1,31 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Calendar, Clock, CreditCard, Mail, Phone, Dumbbell } from 'lucide-react';
-import { members, memberships, trainers } from '../data/mockData';
+import { memberships, trainers } from '../data/mockData';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 import { formatDate } from '../lib/utils';
+import { useMemberContext } from '../context/MemberContext';
+import toast from 'react-hot-toast';
 
 const MemberDetailsPage: React.FC = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { members, updateMember } = useMemberContext();
   const member = members.find(m => m.id === id);
   const membership = memberships.find(m => m.id === member?.membershipId);
-  const assignedTrainer = trainers[0]; // In a real app, this would come from the member's data
+  const assignedTrainer = trainers.find(t => t.id === member?.trainerId);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: member?.name || '',
+    email: member?.email || '',
+    phone: member?.phone || '',
+    membershipId: member?.membershipId || '',
+    trainerId: member?.trainerId || '',
+  });
 
   if (!member) {
     return (
@@ -28,6 +42,21 @@ const MemberDetailsPage: React.FC = () => {
       </div>
     );
   }
+
+  const handleSave = () => {
+    const updatedMember = {
+      ...member,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      membershipId: formData.membershipId,
+      trainerId: formData.trainerId || undefined,
+    };
+
+    updateMember(updatedMember);
+    setIsEditing(false);
+    toast.success('Member details updated successfully');
+  };
 
   // Calculate membership due date
   const joinDate = new Date(member.joinDate);
@@ -47,21 +76,45 @@ const MemberDetailsPage: React.FC = () => {
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <img
-              src={member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=0EA5E9&color=fff`}
-              alt={member.name}
-              className="h-16 w-16 rounded-full"
-            />
-            <div className="ml-4">
-              <h1 className="text-2xl font-bold text-gray-900">{member.name}</h1>
-              <div className="mt-1 flex items-center">
-                <Badge variant={member.status === 'active' ? 'success' : member.status === 'pending' ? 'warning' : 'danger'}>
-                  {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                </Badge>
-                <span className="ml-2 text-sm text-gray-500">Member ID: {member.memberId}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <img
+                src={member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=0EA5E9&color=fff`}
+                alt={member.name}
+                className="h-16 w-16 rounded-full"
+              />
+              <div className="ml-4">
+                {isEditing ? (
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="font-bold text-xl"
+                  />
+                ) : (
+                  <h1 className="text-2xl font-bold text-gray-900">{member.name}</h1>
+                )}
+                <div className="mt-1 flex items-center">
+                  <Badge variant={member.status === 'active' ? 'success' : member.status === 'pending' ? 'warning' : 'danger'}>
+                    {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                  </Badge>
+                  <span className="ml-2 text-sm text-gray-500">Member ID: {member.memberId}</span>
+                </div>
               </div>
             </div>
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleSave}>
+                  Save Changes
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                Edit Details
+              </Button>
+            )}
           </div>
         </div>
 
@@ -78,14 +131,32 @@ const MemberDetailsPage: React.FC = () => {
                       <Mail className="h-4 w-4 mr-2" />
                       Email
                     </dt>
-                    <dd className="text-sm text-gray-900">{member.email}</dd>
+                    <dd className="text-sm text-gray-900">
+                      {isEditing ? (
+                        <Input
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                      ) : (
+                        member.email
+                      )}
+                    </dd>
                   </div>
                   <div className="flex items-center">
                     <dt className="flex items-center text-sm font-medium text-gray-500 w-24">
                       <Phone className="h-4 w-4 mr-2" />
                       Phone
                     </dt>
-                    <dd className="text-sm text-gray-900">{member.phone}</dd>
+                    <dd className="text-sm text-gray-900">
+                      {isEditing ? (
+                        <Input
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        />
+                      ) : (
+                        member.phone
+                      )}
+                    </dd>
                   </div>
                   <div className="flex items-center">
                     <dt className="flex items-center text-sm font-medium text-gray-500 w-24">
@@ -109,7 +180,23 @@ const MemberDetailsPage: React.FC = () => {
                       <CreditCard className="h-4 w-4 mr-2" />
                       Plan
                     </dt>
-                    <dd className="text-sm text-gray-900">{membership?.name}</dd>
+                    <dd className="text-sm text-gray-900">
+                      {isEditing ? (
+                        <select
+                          value={formData.membershipId}
+                          onChange={(e) => setFormData({ ...formData, membershipId: e.target.value })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        >
+                          {memberships.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        membership?.name
+                      )}
+                    </dd>
                   </div>
                   <div className="flex items-center">
                     <dt className="flex items-center text-sm font-medium text-gray-500 w-24">
@@ -141,7 +228,20 @@ const MemberDetailsPage: React.FC = () => {
                 <CardTitle>Assigned Trainer</CardTitle>
               </CardHeader>
               <CardContent>
-                {assignedTrainer ? (
+                {isEditing ? (
+                  <select
+                    value={formData.trainerId}
+                    onChange={(e) => setFormData({ ...formData, trainerId: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                  >
+                    <option value="">No trainer assigned</option>
+                    {trainers.map((trainer) => (
+                      <option key={trainer.id} value={trainer.id}>
+                        {trainer.name} - {trainer.specialization}
+                      </option>
+                    ))}
+                  </select>
+                ) : assignedTrainer ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <img
@@ -164,9 +264,6 @@ const MemberDetailsPage: React.FC = () => {
                   <div className="text-center py-4">
                     <Dumbbell className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-500">No trainer assigned</p>
-                    <Button variant="outline" size="sm" className="mt-4">
-                      Assign Trainer
-                    </Button>
                   </div>
                 )}
               </CardContent>

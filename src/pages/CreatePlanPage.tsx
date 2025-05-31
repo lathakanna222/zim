@@ -4,9 +4,13 @@ import { ArrowLeft, Plus, X } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
+import { useMemberContext } from '../context/MemberContext';
+import { Membership } from '../types';
+import toast from 'react-hot-toast';
 
 const CreatePlanPage: React.FC = () => {
   const navigate = useNavigate();
+  const { addMembership } = useMemberContext();
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -32,8 +36,20 @@ const CreatePlanPage: React.FC = () => {
       return;
     }
 
-    // Here you would normally make an API call to create the plan
-    // For demo purposes, we'll just navigate back
+    // Create new membership plan
+    const newPlan: Membership = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: formData.name,
+      price: parseFloat(formData.price),
+      duration: parseInt(formData.duration),
+      description: formData.description,
+      features: formData.features,
+      color: `bg-${['blue', 'green', 'purple', 'amber'][Math.floor(Math.random() * 4)]}-500`,
+    };
+
+    // Add membership using context
+    addMembership(newPlan);
+    toast.success('Membership plan created successfully');
     navigate('/memberships');
   };
 
