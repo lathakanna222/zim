@@ -2,20 +2,30 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Filter, Edit, Trash2, UserPlus, MessageCircle } from 'lucide-react';
 import { Member, Trainer } from '../../types';
-import { members as initialMembers, trainers as initialTrainers, memberships } from '../../data/mockData';
+import { memberships } from '../../data/mockData';
 import { formatDate } from '../../lib/utils';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import toast from 'react-hot-toast';
 
-const MemberList: React.FC = () => {
+interface MemberListProps {
+  members: Member[];
+  trainers: Trainer[];
+  onDeleteMember: (id: string) => void;
+  onDeleteTrainer: (id: string) => void;
+}
+
+const MemberList: React.FC<MemberListProps> = ({ 
+  members, 
+  trainers, 
+  onDeleteMember, 
+  onDeleteTrainer 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [membersList, setMembersList] = useState(initialMembers);
-  const [trainersList, setTrainersList] = useState(initialTrainers);
   
-  const filteredMembers = membersList.filter((member) => {
+  const filteredMembers = members.filter((member) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -27,7 +37,7 @@ const MemberList: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const filteredTrainers = trainersList.filter((trainer) => {
+  const filteredTrainers = trainers.filter((trainer) => {
     const matchesSearch =
       trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trainer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,49 +69,20 @@ const MemberList: React.FC = () => {
 
   const handleDeleteMember = (id: string) => {
     if (confirm('Are you sure you want to delete this member?')) {
-      setMembersList(prev => prev.filter(member => member.id !== id));
+      onDeleteMember(id);
       toast.success('Member deleted successfully');
     }
   };
 
   const handleDeleteTrainer = (id: string) => {
     if (confirm('Are you sure you want to delete this trainer?')) {
-      setTrainersList(prev => prev.filter(trainer => trainer.id !== id));
+      onDeleteTrainer(id);
       toast.success('Trainer deleted successfully');
     }
   };
 
   const handleMessage = (phone: string, name: string) => {
-    // Instead of opening WhatsApp, show a toast notification
     toast.success(`Message sent to ${name}`);
-  };
-
-  // Function to add new member (will be called from AddMemberPage)
-  const addMember = (member: Member) => {
-    setMembersList(prev => [...prev, member]);
-  };
-
-  // Function to add new trainer (will be called from AddTrainerPage)
-  const addTrainer = (trainer: Trainer) => {
-    setTrainersList(prev => [...prev, trainer]);
-  };
-
-  // Function to update member
-  const updateMember = (updatedMember: Member) => {
-    setMembersList(prev => 
-      prev.map(member => 
-        member.id === updatedMember.id ? updatedMember : member
-      )
-    );
-  };
-
-  // Function to update trainer
-  const updateTrainer = (updatedTrainer: Trainer) => {
-    setTrainersList(prev => 
-      prev.map(trainer => 
-        trainer.id === updatedTrainer.id ? updatedTrainer : trainer
-      )
-    );
   };
 
   return (
